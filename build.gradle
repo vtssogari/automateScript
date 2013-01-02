@@ -1,0 +1,35 @@
+apply plugin: 'cargo'
+
+repositories {
+    mavenCentral()
+}
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.gradle.api.plugins:gradle-cargo-plugin:0.5.6'
+    }
+}
+
+dependencies {
+    def cargoVersion = '1.2.2'
+    cargo "org.codehaus.cargo:cargo-core-uberjar:$cargoVersion", "org.codehaus.cargo:cargo-ant:$cargoVersion"
+}
+
+cargo {
+    containerId = 'tomcat7x'
+	port = 9090
+
+	deployable {
+        file = file('tomcat7/apache-tomcat-7.0.34/webapps/solr.war')
+        context = 'solr'
+    }
+	
+    local {
+		homeDir = file('tomcat7/apache-tomcat-7.0.34')
+    }
+}
+
+
