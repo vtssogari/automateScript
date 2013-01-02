@@ -1,35 +1,61 @@
-apply plugin: 'cargo'
+import org.apache.tools.ant.filters.*
 
-repositories {
-    mavenCentral()
+project.description = "Solr Builder on to Tomcat7"
+
+tomcatHome = app_tomcat_dir + "\\tomcat7_" + instanceNumber
+catalinaHome = app_tomcat_dir + "\\tomcat7_" + instanceNumber + "\\apache-tomcat-7.0.34"
+solrHome = app_solr_home_dir + "\\solr_home_" + instanceNumber
+tomcatwebapp = catalinaHome + '\\webapps'
+
+task unzipTomcat(type: Copy) {
+	println "Installing tomcat 7 ..."
+	def zipFile = file(install_tomcat7zip)
+	def outputDir = file(tomcatHome)
+	from zipTree(zipFile)
+	into outputDir
 }
 
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'org.gradle.api.plugins:gradle-cargo-plugin:0.5.6'
-    }
+task copySolrWar(type: Copy, dependsOn: unzipTomcat) {
+	println "copy solr war to tomcat ..."
+	def sourceFile = file(install_solr4war)
+	def targetDir = file(tomcatwebapp)
+	from sourceFile
+	into targetDir
+	rename ('apache-solr-4.0.0.war', 'solr.war')
 }
 
-dependencies {
-    def cargoVersion = '1.2.2'
-    cargo "org.codehaus.cargo:cargo-core-uberjar:$cargoVersion", "org.codehaus.cargo:cargo-ant:$cargoVersion"
-}
-
-cargo {
-    containerId = 'tomcat7x'
-	port = 9090
-
-	deployable {
-        file = file('tomcat7/apache-tomcat-7.0.34/webapps/solr.war')
-        context = 'solr'
-    }
+task copySolrContextXml(type: Copy, dependsOn: copySolrWar) {
+	println "configuring tomcat 7 ..."
+	def sourceDir = file(install_solrConfig)
+	def targetDir = file(catalinaHome + '/conf/Catalina/localhost')
+	from sourceDir
+	into targetDir
 	
-    local {
-		homeDir = file('tomcat7/apache-tomcat-7.0.34')
-    }
+	// rename the tomcat_solr_war
+	// rename the solr_home_location
+	filter(ReplaceTokens, tokens: [tomcat_solr_war: tomcatwebapp + "\\solr.war", solr_home_location: solrHome])
 }
+
+task copySolrHome(type: Copy, dependsOn: copySolrContextXml) {
+	println "Installing solr home ..."
+	def sourceDir = file(install_solrHome)
+	def targetDir = file(solrHome)
+	from sourceDir
+	into targetDir
+}
+
+task install(dependsOn: copySolrHome) {
+	
+	
+	println "Done"
+}
+
+task clean(type: Delete) {
+   delete tomcatHome, solrHome
+}
+
+ 
+
+ 
 
 
