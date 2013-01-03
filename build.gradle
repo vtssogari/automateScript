@@ -2,10 +2,10 @@ import org.apache.tools.ant.filters.*
 
 project.description = "Solr Builder on to Tomcat7"
 
-tomcatHome = app_tomcat_dir + "\\tomcat7_" + instanceNumber
-catalinaHome = app_tomcat_dir + "\\tomcat7_" + instanceNumber + "\\apache-tomcat-7.0.34"
-solrHome = app_solr_home_dir + "\\solr_home_" + instanceNumber
-tomcatwebapp = catalinaHome + '\\webapps'
+tomcatHome = app_tomcat_dir + env_path_sep + "tomcat7_" + instanceNumber
+catalinaHome = app_tomcat_dir + env_path_sep + "tomcat7_" + instanceNumber + env_path_sep + "apache-tomcat-7.0.34"
+solrHome = app_solr_home_dir + env_path_sep + "solr_home_" + instanceNumber
+tomcatwebapp = catalinaHome + env_path_sep + 'webapps'
 
 task unzipTomcat(type: Copy) {
 	println "Installing tomcat 7 ..."
@@ -33,7 +33,7 @@ task copySolrContextXml(type: Copy, dependsOn: copySolrWar) {
 	
 	// rename the tomcat_solr_war
 	// rename the solr_home_location
-	filter(ReplaceTokens, tokens: [tomcat_solr_war: tomcatwebapp + "\\solr.war", solr_home_location: solrHome])
+	filter(ReplaceTokens, tokens: [tomcat_solr_war: tomcatwebapp + env_path_sep + "solr.war", solr_home_location: solrHome])
 }
 
 task copySolrHome(type: Copy, dependsOn: copySolrContextXml) {
@@ -54,7 +54,9 @@ task clean(type: Delete) {
    delete tomcatHome, solrHome
 }
 
- 
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.3'
+}
 
  
 
