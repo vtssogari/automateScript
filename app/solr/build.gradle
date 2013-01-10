@@ -23,9 +23,9 @@ def isSolrCloud = true
 def zkHost = "localhost:2181,localhost:2182,localhost:2183"
 
 // Build script configuration ----------------------------------------------
-def install_solr_dir = "install/apache-solr-4.1"
+//def install_solr_dir = "install/apache-solr-4.1"
 def install_zkCli_dir = "install/SolrZKCli/lib"
-def install_solr4war = install_solr_dir + "/dist/apache-solr-4.1-2013-01-07_23-32-20.war"
+def install_solr4war = install_solr_dir + "/apache-solr-4.1-2013-01-07_23-32-20.war"
 
 def solrHomeDir = solrBaseDir + "/solr_home_" + instance_number
 def tomcatWebappsDir = catalinaHome + '/webapps'
