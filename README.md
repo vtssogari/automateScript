@@ -5,6 +5,18 @@ Following modules can be used to automate solrCloud installation on Unix and Win
 
 ## Tomcat7
 
+* Runnging script : change build.gradle configuration
+
+    gradle install
+
 ## Zookeeper
 
+* Runnging script : change build.gradle configuration
+
+    gradle install
+
 ## SolrCloud
+
+* Runnging script : change build.gradle configuration
+
+    gradle install
