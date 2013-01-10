@@ -6,7 +6,7 @@ defaultTasks 'install'
 
 // START Configuration variables ------------------------------------------
 def instance_number = 3				
-def collectionName = "udid"
+def collectionName = "collection1"
 def solrBaseDir = "$buildDir/solr_home"
 def hostName = "localhost"
 def shardNumbers = 1
