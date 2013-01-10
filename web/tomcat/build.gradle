@@ -1,0 +1,118 @@
+import org.apache.tools.ant.filters.*
+
+project.description = "Tomcat Builder"
+
+defaultTasks 'install'
+
+// START Configuration variables ------------------------------------------
+def instance_number = 3
+def tomcat_port = 8080 + instance_number - 1
+def app_tomcat_dir = "$buildDir/tomcat"
+def min_java_heap_size = "128m"
+def max_java_heap_size = "256m"
+def output = "$buildDir/tomcat_output.properties"
+// END Configuration variables ---------------------------------------------
+def tomcat_shutdown_port = 8005 + instance_number
+def tomcat_ajp_port = 8009 + instance_number
+def install_tomcat7zip = "./apache-tomcat-7.0.34.zip"
+def tomcatInstanceDir = app_tomcat_dir + "/tomcat7_" + instance_number
+def catalinaHomeDir = tomcatInstanceDir + "/apache-tomcat-7.0.34"
+def tomcatWebappsDir = catalinaHomeDir + "/webapps"
+def catalinaBinDir = catalinaHomeDir + "/bin"
+def catalinaConfDir = catalinaHomeDir + "/conf"
+
+task unzipTomcat(type: Copy) {
+	def zipFile = file(install_tomcat7zip)
+	def outputDir = file(tomcatInstanceDir)
+	from zipTree(zipFile)
+	into outputDir
+}
+
+task copyTomcatSetting(type: Copy, dependsOn: unzipTomcat){
+	from file('template/setenv.bat')
+	from file('template/setenv.sh')
+	into file(catalinaBinDir)
+	filter(ReplaceTokens, tokens: [min_java_heap_size: min_java_heap_size, max_java_heap_size: max_java_heap_size])
+}
+
+
+task startTomcat(type:Exec) {
+	workingDir catalinaBinDir
+	if(isWindowsEnv()){
+		//on windows:
+		commandLine 'cmd', '/c', 'startup.bat'
+	}else{
+		//on linux
+		commandLine './startup.sh'
+	}
+	//store the output instead of printing to the console:
+	standardOutput = new ByteArrayOutputStream()
+	//extension method stopTomcat.output() can be used to obtain the output:
+	ext.output = {
+		return standardOutput.toString()
+	}
+}
+
+task stopTomcat(type:Exec) {
+	workingDir catalinaBinDir
+	if(isWindowsEnv()){
+		//on windows:
+		commandLine 'cmd', '/c', 'shutdown.bat'
+	}else{
+		//on linux
+		commandLine './shutdown.sh'
+	}
+	//store the output instead of printing to the console:
+	standardOutput = new ByteArrayOutputStream()
+	//extension method stopTomcat.output() can be used to obtain the output:
+	ext.output = {
+		return standardOutput.toString()
+	}
+}
+
+task install(dependsOn: copyTomcatSetting) {
+
+	def ofile = file(output)
+	ofile.createNewFile()
+	String homeDir = file(catalinaHomeDir).absolutePath
+	homeDir = homeDir.replace("\\", "\\\\");
+	String content = "catalina_home=" + homeDir + System.getProperty("line.separator")
+	content += "tomcat_port=" + tomcat_port + System.getProperty("line.separator")
+	ofile.write(content)
+	
+	doLast{
+		updateServerXML(catalinaConfDir, tomcat_port, tomcat_shutdown_port, tomcat_ajp_port)
+		startTomcat.execute()
+	}
+}
+
+task clean(type: Delete) {
+   delete tomcatInstanceDir
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.3'
+}
+
+boolean isWindowsEnv() {
+	def os = System.getProperty("os.name").toLowerCase() 
+	return os.contains("windows");
+}
+
+boolean updateServerXML(String catalinaConfDir, int tomcat_port, int tomcat_shutdown_port, int tomcat_ajp_port) {
+	//port="8080"	http port
+	//port="8005"	shutdown port
+	//port="8009"	AJP port
+	
+	def serverXml = file(catalinaConfDir+"/server.xml").text
+	serverXml = serverXml.replace('port="8080"', 'port="'+tomcat_port+'"')
+	serverXml = serverXml.replace('port="8005"', 'port="'+tomcat_shutdown_port+'"')
+	serverXml = serverXml.replace('port="8009"', 'port="'+tomcat_ajp_port+'"')
+	
+	new File(catalinaConfDir+"/server.xml").write(serverXml)
+	return true
+}
+
+ 
+
+

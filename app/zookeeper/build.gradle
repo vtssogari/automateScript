@@ -1,0 +1,99 @@
+import org.apache.tools.ant.filters.*
+
+project.description = "Zookeeper Builder"
+
+defaultTasks 'install'
+
+// START Configuration variables ------------------------------------------
+int baseClientPort = 2181
+int baseQuorumPort = 2888
+int baseLeaderElectionPort = 3888
+def solrBaseDir="$buildDir/zookeeper"
+def output = "$buildDir/zookeeper_output.properties"
+
+// END Configuration variables ---------------------------------------------
+def clientPort = baseClientPort + (num.toInteger() - 1)
+def quorumPort = baseQuorumPort + (num.toInteger() - 1)
+def leaderElectionPort = baseLeaderElectionPort + (num.toInteger() - 1)
+
+def zkServerArray
+def zkServers = ""
+def zkName = "zk" + num.toInteger()
+def install_zookeeper_dir = "install/zookeeper"
+def zookeeperInstanceDir = solrBaseDir + "/zookeeper_" + num.toInteger()
+def zookeeperLogDir = solrBaseDir + "/log/" + zkName 
+def zookeeperDataDir = solrBaseDir + "/data/" + zkName
+def zoo_sample_cfg = "template/zoo.cfg"
+def zkClientHosts = ""
+
+task configureZKHosts(){
+	zkServerArray = zkServerList.tokenize(",")
+	println "clientPort : " + clientPort
+	def count = 0
+	def zkHosts = null
+	zkServerArray.each { hostName ->
+		def qport = baseQuorumPort + count
+		def leport =baseLeaderElectionPort + count
+		def cport = baseClientPort + count
+		def serverItem = "server." + (count + 1) + "=" + hostName + ":" + qport + ":" + leport
+		def clientHost = hostName + ":" + cport
+		if(zkHosts == null){
+			zkHosts = serverItem
+			zkClientHosts = clientHost
+		}else{
+			zkHosts += System.getProperty("line.separator") + serverItem
+			zkClientHosts += "," + clientHost
+		}
+		count++
+	}
+	zkServers = zkHosts
+	println "zkServers: " + zkServers
+}
+
+task copyZookeeper(type: Copy, dependsOn: configureZKHosts) {
+	def zkDir = file(install_zookeeper_dir)
+	def outputDir = file(zookeeperInstanceDir)
+	from zkDir
+	into outputDir
+}
+
+task configureZookeeper(type: Copy, dependsOn: copyZookeeper) {
+	def sourceFile = file(zoo_sample_cfg)
+	def targetDir = file(zookeeperInstanceDir + '/conf')
+	from sourceFile
+	into targetDir
+	String dataDir = file(zookeeperDataDir).absolutePath
+	String logDir = file(zookeeperLogDir).absolutePath
+	dataDir = dataDir.replace("\\", "\\\\");
+	logDir = logDir.replace("\\", "\\\\");
+	filter(ReplaceTokens, tokens: [zookeeperDataDir: dataDir, zookeeperLogDir: logDir, clientPort: clientPort+"", zkServers: zkServers])
+}
+
+task install_sub(dependsOn: configureZookeeper) {
+	doLast {
+		def dataDir = file(zookeeperDataDir)
+		dataDir.mkdirs()
+		def logDir = file(zookeeperLogDir)
+		logDir.mkdirs()
+			
+		String filename = "myid"
+		def myid = file(zookeeperDataDir + "/" + filename)
+		boolean success = myid.createNewFile()  
+		myid.write(num + "")
+	}
+}
+
+task install(dependsOn: install_sub) {
+	def ofile = file(output)
+	ofile.createNewFile()
+	ofile.write("zkHost=" + zkClientHosts)
+}
+
+
+task clean(type: Delete) {
+   delete solrBaseDir
+}
+
+
+
+
