@@ -7,9 +7,10 @@ defaultTasks 'install'
 // START Configuration variables ------------------------------------------
 def base_dir_required = "$buildDir/solr_home"
 def output_required = "$buildDir/solr_output.properties"
-def instance_number = 1			
+def instance_number = 1
 
-def collection_name = "collection1"
+def collection_name = "<your collection name here>"
+def collection_config_dir = "<your solr instance conf>"
 def host_name = "localhost"
 def shard_numbers = 1
 def replication_factor = 1
@@ -28,7 +29,7 @@ def zk_host = "localhost:2181,localhost:2182,localhost:2183"
 // Build script configuration ----------------------------------------------
 //def install_solr_dir = "install/apache-solr-4.1"
 def install_zkCli_dir = "install/SolrZKCli/lib"
-def install_solr4war = install_solr_dir + "/apache-solr-4.1-2013-01-07_23-32-20.war"
+def install_solr4war = "install/apache-solr-4.1-2013-01-07_23-32-20.war"
 
 def solrHomeDir = base_dir_required + "/solr_home_" + instance_number
 def tomcatWebappsDir = catalina_home + '/webapps'
@@ -109,34 +110,47 @@ task install() {
 	println "Done"
 }
 
-install.dependsOn copySolrHome, copyCloudSolrHome, generateRestAPIUrl
 
 task generateRestAPIUrl(){
-	def baseUrl = 'http://' + host_name + ':' + tomcat_port 
+	String content = ''
+	String zkCliDir = file(install_zkCli_dir).absolutePath
+	content += '# 1. Run this just once in command for uploading configuration to zookeeper'
+	content += System.getProperty("line.separator") + 'java -classpath "' + zkCliDir + '/*" org.apache.solr.cloud.ZkCLI -cmd upconfig -confdir ' + collection_config_dir + ' -confname ' + collection_name + ' -zkhost ' + zk_host
+	
+	content += System.getProperty("line.separator")
+	def baseUrl = 'http://' + host_name + ':' + tomcat_port
 	//1. create collection
-	def createCollectionUrl = baseUrl + '/solr/admin/collections?action=CREATE&name=' + collection_name + '&numShards=' + shard_numbers + '&replicationFactors=' + replication_factor 
+	def createCollectionUrl = baseUrl + '/solr/admin/collections?action=CREATE&name=' + collection_name + '&collection.configname=' + collection_name + '&numShards=' + shard_numbers + '&replicationFactors=' + replication_factor
 	//2. delete collection
 	def deleteCollectionUrl = baseUrl + '/solr/admin/collections?action=DELETE&name=' + collection_name
 	//3. create core
 	def createCoreUrl = baseUrl + '/solr/admin/cores?action=CREATE&name=' + collection_name + '&collection=' + collection_name
 	def solrJVMEnvProp = getSysProp(solrHomeDir, tomcat_port, zk_host, is_solr_cloud)
 	
-	String content = ''
+	
 	def ofile = file(output_required)
 	ofile.createNewFile()
 	if(is_solr_cloud){
-		content = "create_collection_url=" + createCollectionUrl + System.getProperty("line.separator")
-		content += "delete_collection_url=" + deleteCollectionUrl + System.getProperty("line.separator")
-		content += "create_core_url=" + createCoreUrl + System.getProperty("line.separator")
+		content += System.getProperty("line.separator") + "# 2. Run this url to create collection just once"
+		content += System.getProperty("line.separator") + "" + createCollectionUrl
+		//content += System.getProperty("line.separator") + "delete_collection_url=" + deleteCollectionUrl
+		content += System.getProperty("line.separator") + "# 3. Run this url on every solr instance to create core"
+		content += System.getProperty("line.separator") + "" + createCoreUrl
 	}
-	content += "solr_jvm_env_prop=" + solrJVMEnvProp + System.getProperty("line.separator")
+	
+	content += System.getProperty("line.separator")
+	content += System.getProperty("line.separator") + "# solr bootstrap for non tomcat server"
+	content += System.getProperty("line.separator") + "" + solrJVMEnvProp
 	ofile.write(content)
 	
 }
 
+
+install.dependsOn copySolrHome, copyCloudSolrHome, generateRestAPIUrl
+
 task uploadSolrConfigToZk(type:Exec) {
 	String zkCliDir = file(install_zkCli_dir).absolutePath
-	def commandToExecute = 'java -classpath "' + zkCliDir + '/*" org.apache.solr.cloud.ZkCLI -cmd upconfig -confdir "' + solrHomeDir + '" -confname ' + collection_name + ' -zkhost ' + zk_host
+	def commandToExecute = 'java -classpath "' + zkCliDir + '/*" org.apache.solr.cloud.ZkCLI -cmd upconfig -confdir "' + collection_config_dir + '" -confname ' + collection_name + ' -zkhost ' + zk_host
 	
 	println commandToExecute
 	workingDir "./"
