@@ -13,6 +13,9 @@ def collection_name = "collection1"
 def host_name = "localhost"
 def shard_numbers = 1
 def replication_factor = 1
+
+def is_solr_cloud = true
+def is_deploy_to_tomcat = true
 // END Configuration variables ---------------------------------------------
 
 // Data from Tomcat build file output --------------------------------------										
@@ -20,7 +23,6 @@ def tomcat_port = "8082"
 def catalina_home = "C:\\Users\\Vtssogari\\Documents\\GitHub\\automateScript\\web\\tomcat\\build\\tomcat\\tomcat7_3\\apache-tomcat-7.0.34"
 
 // Data from Zookeeper build file output------------------------------------
-def isSolrCloud = true
 def zk_host = "localhost:2181,localhost:2182,localhost:2183"
 
 // Build script configuration ----------------------------------------------
@@ -69,10 +71,7 @@ task copyCloudSolrHome(type: Copy, dependsOn: copySolrContextXml) {
 
 String getSolrOpts(String solrHome, String port, String zkHost, boolean isWindows, boolean isSolrCloud) {
 	String result = null
-	def SOLR_OPTS = 'SOLR_OPTS=-Dsolr.solr.home="'+solrHome+'"'
-	if(isSolrCloud){
-		SOLR_OPTS += ' -Dport=' + port + ' -DhostContext=solr -DzkClientTimeout=20000 -DzkHost="' + zkHost +'"'
-	}
+	def SOLR_OPTS = 'SOLR_OPTS=' + getSysProp(solrHome, port, zkHost, isSolrCloud)
 	if(isWindows){
 		result = System.getProperty("line.separator") + "set " + SOLR_OPTS
 		result += System.getProperty("line.separator") + "set JAVA_OPTS=%JAVA_OPTS% %SOLR_OPTS%"
@@ -83,23 +82,34 @@ String getSolrOpts(String solrHome, String port, String zkHost, boolean isWindow
 	return result
 }
 
+String getSysProp(String solrHome, String port, String zkHost, boolean isSolrCloud){
+	def sysProp = '-Dsolr.solr.home="'+solrHome+'"'
+	if(isSolrCloud){
+		sysProp += ' -Dport=' + port + ' -DhostContext=solr -DzkClientTimeout=20000 -DzkHost="' + zkHost +'"'
+	}
+	return sysProp
+}
+
 
 task install() {
 	println "install.doFirst"
-	if(isSolrCloud){
+	if(is_solr_cloud){
 		tasks.copySolrHome.enabled = false
 	}else{
 		tasks.copyCloudSolrHome.enabled = false
 	}
-	
-	def setEvnBatFile = file(tomcatBinDir + "/setenv.bat")
-	def setEvnShFile = file(tomcatBinDir + "/setenv.sh")
-	setEvnBatFile.append(getSolrOpts(solrHomeDir, tomcat_port, zk_host, true, isSolrCloud))
-	setEvnShFile.append(getSolrOpts(solrHomeDir, tomcat_port, zk_host, false, isSolrCloud))
+	tasks.deploySolrWarToTomcat.enabled = is_deploy_to_tomcat
+	tasks.copySolrContextXml.enabled = is_deploy_to_tomcat
+	if(is_deploy_to_tomcat){
+		def setEvnBatFile = file(tomcatBinDir + "/setenv.bat")
+		def setEvnShFile = file(tomcatBinDir + "/setenv.sh")
+		setEvnBatFile.append(getSolrOpts(solrHomeDir, tomcat_port, zk_host, true, is_solr_cloud))
+		setEvnShFile.append(getSolrOpts(solrHomeDir, tomcat_port, zk_host, false, is_solr_cloud))
+	}
 	println "Done"
 }
 
-install.dependsOn copySolrHome, copyCloudSolrHome
+install.dependsOn copySolrHome, copyCloudSolrHome, generateRestAPIUrl
 
 task generateRestAPIUrl(){
 	def baseUrl = 'http://' + host_name + ':' + tomcat_port 
@@ -109,28 +119,22 @@ task generateRestAPIUrl(){
 	def deleteCollectionUrl = baseUrl + '/solr/admin/collections?action=DELETE&name=' + collection_name
 	//3. create core
 	def createCoreUrl = baseUrl + '/solr/admin/cores?action=CREATE&name=' + collection_name + '&collection=' + collection_name
+	def solrJVMEnvProp = getSysProp(solrHomeDir, tomcat_port, zk_host, is_solr_cloud)
 	
-	
+	String content = ''
 	def ofile = file(output_required)
 	ofile.createNewFile()
-	String content = "create_collection_url=" + createCollectionUrl + System.getProperty("line.separator")
-	content += "delete_collection_url=" + deleteCollectionUrl + System.getProperty("line.separator")
-	content += "create_core_url=" + createCoreUrl + System.getProperty("line.separator")
+	if(is_solr_cloud){
+		content = "create_collection_url=" + createCollectionUrl + System.getProperty("line.separator")
+		content += "delete_collection_url=" + deleteCollectionUrl + System.getProperty("line.separator")
+		content += "create_core_url=" + createCoreUrl + System.getProperty("line.separator")
+	}
+	content += "solr_jvm_env_prop=" + solrJVMEnvProp + System.getProperty("line.separator")
 	ofile.write(content)
 	
 }
 
-task uploadSolrConfigToZk(type:Exec, dependsOn: generateRestAPIUrl) {
-
-	//1. download solr build or nightly build
-	//2. unzip solr
-	//3. locate apache-solr-4.1-xxxx.war
-	//4. rename it to solr.war
-	//5. unzip and move files to cli folder
-	//6. run cli command to upload conf folder
-	//7. deploy war file
-	//new File(oldFilename).renameTo(new File(newFilename))
-		
+task uploadSolrConfigToZk(type:Exec) {
 	String zkCliDir = file(install_zkCli_dir).absolutePath
 	def commandToExecute = 'java -classpath "' + zkCliDir + '/*" org.apache.solr.cloud.ZkCLI -cmd upconfig -confdir "' + solrHomeDir + '" -confname ' + collection_name + ' -zkhost ' + zk_host
 	
