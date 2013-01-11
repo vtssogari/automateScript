@@ -7,7 +7,7 @@ defaultTasks 'install'
 // START Configuration variables ------------------------------------------
 def base_dir_required = "$buildDir/solr_home"
 def output_required = "$buildDir/solr_output.properties"
-def instance_number = 3			
+def instance_number = 1			
 
 def collection_name = "collection1"
 def host_name = "localhost"
