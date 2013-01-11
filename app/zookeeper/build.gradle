@@ -5,29 +5,31 @@ project.description = "Zookeeper Builder"
 defaultTasks 'install'
 
 // START Configuration variables ------------------------------------------
+def base_dir_required="$buildDir/zookeeper"
+def output_required = "$buildDir/zookeeper_output.properties"
+def instance_number = 1
+def zk_server_comma_list = "localhost,localhost,localhost"
+// END Configuration variables ---------------------------------------------
+
 int baseClientPort = 2181
 int baseQuorumPort = 2888
 int baseLeaderElectionPort = 3888
-def solrBaseDir="$buildDir/zookeeper"
-def output = "$buildDir/zookeeper_output.properties"
-
-// END Configuration variables ---------------------------------------------
-def clientPort = baseClientPort + (num.toInteger() - 1)
-def quorumPort = baseQuorumPort + (num.toInteger() - 1)
-def leaderElectionPort = baseLeaderElectionPort + (num.toInteger() - 1)
+def clientPort = baseClientPort + (instance_number.toInteger() - 1)
+def quorumPort = baseQuorumPort + (instance_number.toInteger() - 1)
+def leaderElectionPort = baseLeaderElectionPort + (instance_number.toInteger() - 1)
 
 def zkServerArray
 def zkServers = ""
-def zkName = "zk" + num.toInteger()
+def zkName = "zk" + instance_number.toInteger()
 def install_zookeeper_dir = "install/zookeeper"
-def zookeeperInstanceDir = solrBaseDir + "/zookeeper_" + num.toInteger()
-def zookeeperLogDir = solrBaseDir + "/log/" + zkName 
-def zookeeperDataDir = solrBaseDir + "/data/" + zkName
+def zookeeperInstanceDir = base_dir_required + "/zookeeper_" + instance_number.toInteger()
+def zookeeperLogDir = base_dir_required + "/log/" + zkName 
+def zookeeperDataDir = base_dir_required + "/data/" + zkName
 def zoo_sample_cfg = "template/zoo.cfg"
 def zkClientHosts = ""
 
 task configureZKHosts(){
-	zkServerArray = zkServerList.tokenize(",")
+	zkServerArray = zk_server_comma_list.tokenize(",")
 	println "clientPort : " + clientPort
 	def count = 0
 	def zkHosts = null
@@ -79,19 +81,19 @@ task install_sub(dependsOn: configureZookeeper) {
 		String filename = "myid"
 		def myid = file(zookeeperDataDir + "/" + filename)
 		boolean success = myid.createNewFile()  
-		myid.write(num + "")
+		myid.write(instance_number + "")
 	}
 }
 
 task install(dependsOn: install_sub) {
-	def ofile = file(output)
+	def ofile = file(output_required)
 	ofile.createNewFile()
-	ofile.write("zkHost=" + zkClientHosts)
+	ofile.write("zk_host=" + zkClientHosts)
 }
 
 
 task clean(type: Delete) {
-   delete solrBaseDir
+   delete base_dir_required
 }
 
 

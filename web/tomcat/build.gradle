@@ -5,17 +5,19 @@ project.description = "Tomcat Builder"
 defaultTasks 'install'
 
 // START Configuration variables ------------------------------------------
+def base_dir_required = "$buildDir/tomcat"
+def output_required = "$buildDir/tomcat_output.properties"
 def instance_number = 3
 def tomcat_port = 8080 + instance_number - 1
-def app_tomcat_dir = "$buildDir/tomcat"
 def min_java_heap_size = "128m"
 def max_java_heap_size = "256m"
-def output = "$buildDir/tomcat_output.properties"
+
 // END Configuration variables ---------------------------------------------
+
 def tomcat_shutdown_port = 8005 + instance_number
 def tomcat_ajp_port = 8009 + instance_number
 def install_tomcat7zip = "./apache-tomcat-7.0.34.zip"
-def tomcatInstanceDir = app_tomcat_dir + "/tomcat7_" + instance_number
+def tomcatInstanceDir = base_dir_required + "/tomcat7_" + instance_number
 def catalinaHomeDir = tomcatInstanceDir + "/apache-tomcat-7.0.34"
 def tomcatWebappsDir = catalinaHomeDir + "/webapps"
 def catalinaBinDir = catalinaHomeDir + "/bin"
@@ -71,8 +73,7 @@ task stopTomcat(type:Exec) {
 }
 
 task install(dependsOn: copyTomcatSetting) {
-
-	def ofile = file(output)
+	def ofile = file(output_required)
 	ofile.createNewFile()
 	String homeDir = file(catalinaHomeDir).absolutePath
 	homeDir = homeDir.replace("\\", "\\\\");

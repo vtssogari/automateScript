@@ -5,31 +5,32 @@ project.description = "Solr Builder"
 defaultTasks 'install'
 
 // START Configuration variables ------------------------------------------
-def instance_number = 3				
-def collectionName = "collection1"
-def solrBaseDir = "$buildDir/solr_home"
-def hostName = "localhost"
-def shardNumbers = 1
-def replicationFactor = 1
-def output = "$buildDir/solr_output.properties"
+def base_dir_required = "$buildDir/solr_home"
+def output_required = "$buildDir/solr_output.properties"
+def instance_number = 3			
+
+def collection_name = "collection1"
+def host_name = "localhost"
+def shard_numbers = 1
+def replication_factor = 1
 // END Configuration variables ---------------------------------------------
 
 // Data from Tomcat build file output --------------------------------------										
-def tomcatPort = "8082"
-def catalinaHome = "C:\\Users\\Vtssogari\\Documents\\GitHub\\automateScript\\web\\tomcat\\build\\tomcat\\tomcat7_3\\apache-tomcat-7.0.34"
+def tomcat_port = "8082"
+def catalina_home = "C:\\Users\\Vtssogari\\Documents\\GitHub\\automateScript\\web\\tomcat\\build\\tomcat\\tomcat7_3\\apache-tomcat-7.0.34"
 
 // Data from Zookeeper build file output------------------------------------
 def isSolrCloud = true
-def zkHost = "localhost:2181,localhost:2182,localhost:2183"
+def zk_host = "localhost:2181,localhost:2182,localhost:2183"
 
 // Build script configuration ----------------------------------------------
 //def install_solr_dir = "install/apache-solr-4.1"
 def install_zkCli_dir = "install/SolrZKCli/lib"
 def install_solr4war = install_solr_dir + "/apache-solr-4.1-2013-01-07_23-32-20.war"
 
-def solrHomeDir = solrBaseDir + "/solr_home_" + instance_number
-def tomcatWebappsDir = catalinaHome + '/webapps'
-def tomcatBinDir = catalinaHome + '/bin'
+def solrHomeDir = base_dir_required + "/solr_home_" + instance_number
+def tomcatWebappsDir = catalina_home + '/webapps'
+def tomcatBinDir = catalina_home + '/bin'
 def install_tomcat_solrConfig = "template/tomcat_context/solr.xml"
 def install_solrHome = "template/solr_home"
 def install_solrXML = "template/solr_cloud_solr_xml"
@@ -44,7 +45,7 @@ task deploySolrWarToTomcat(type: Copy) {
 
 task copySolrContextXml(type: Copy, dependsOn: deploySolrWarToTomcat) {
 	def sourceDir = file(install_tomcat_solrConfig)
-	def targetDir = file(catalinaHome + '/conf/Catalina/localhost')
+	def targetDir = file(catalina_home + '/conf/Catalina/localhost')
 	def solrHomePath = file(solrHomeDir).absolutePath
 	def solrWarPath = file(tomcatWebappsDir + "/solr.war").absolutePath 
 	from sourceDir
@@ -93,28 +94,28 @@ task install() {
 	
 	def setEvnBatFile = file(tomcatBinDir + "/setenv.bat")
 	def setEvnShFile = file(tomcatBinDir + "/setenv.sh")
-	setEvnBatFile.append(getSolrOpts(solrHomeDir, tomcatPort, zkHost, true, isSolrCloud))
-	setEvnShFile.append(getSolrOpts(solrHomeDir, tomcatPort, zkHost, false, isSolrCloud))
+	setEvnBatFile.append(getSolrOpts(solrHomeDir, tomcat_port, zk_host, true, isSolrCloud))
+	setEvnShFile.append(getSolrOpts(solrHomeDir, tomcat_port, zk_host, false, isSolrCloud))
 	println "Done"
 }
 
 install.dependsOn copySolrHome, copyCloudSolrHome
 
 task generateRestAPIUrl(){
-	def baseUrl = 'http://' + hostName + ':' + tomcatPort 
+	def baseUrl = 'http://' + host_name + ':' + tomcat_port 
 	//1. create collection
-	def createCollectionUrl = baseUrl + '/solr/admin/collections?action=CREATE&name=' + collectionName + '&numShards=' + '&replicationFactors=' + replicationFactor 
+	def createCollectionUrl = baseUrl + '/solr/admin/collections?action=CREATE&name=' + collection_name + '&numShards=' + shard_numbers + '&replicationFactors=' + replication_factor 
 	//2. delete collection
-	def deleteCollectionUrl = baseUrl + '/solr/admin/collections?action=DELETE&name=' + collectionName
+	def deleteCollectionUrl = baseUrl + '/solr/admin/collections?action=DELETE&name=' + collection_name
 	//3. create core
-	def createCoreUrl = baseUrl + '/solr/admin/cores?action=CREATE&name=' + collectionName + '&collection=' + collectionName
+	def createCoreUrl = baseUrl + '/solr/admin/cores?action=CREATE&name=' + collection_name + '&collection=' + collection_name
 	
 	
-	def ofile = file(output)
+	def ofile = file(output_required)
 	ofile.createNewFile()
-	String content = "createCollectionUrl=" + createCollectionUrl + System.getProperty("line.separator")
-	content += "deleteCollectionUrl=" + deleteCollectionUrl + System.getProperty("line.separator")
-	content += "createCoreUrl=" + createCoreUrl + System.getProperty("line.separator")
+	String content = "create_collection_url=" + createCollectionUrl + System.getProperty("line.separator")
+	content += "delete_collection_url=" + deleteCollectionUrl + System.getProperty("line.separator")
+	content += "create_core_url=" + createCoreUrl + System.getProperty("line.separator")
 	ofile.write(content)
 	
 }
@@ -131,7 +132,7 @@ task uploadSolrConfigToZk(type:Exec, dependsOn: generateRestAPIUrl) {
 	//new File(oldFilename).renameTo(new File(newFilename))
 		
 	String zkCliDir = file(install_zkCli_dir).absolutePath
-	def commandToExecute = 'java -classpath "' + zkCliDir + '/*" org.apache.solr.cloud.ZkCLI -cmd upconfig -confdir "' + solrHomeDir + '" -confname ' + collectionName + ' -zkhost ' + zkHost
+	def commandToExecute = 'java -classpath "' + zkCliDir + '/*" org.apache.solr.cloud.ZkCLI -cmd upconfig -confdir "' + solrHomeDir + '" -confname ' + collection_name + ' -zkhost ' + zk_host
 	
 	println commandToExecute
 	workingDir "./"
@@ -155,7 +156,7 @@ boolean isWindowsEnv() {
 }
 
 task clean(type: Delete) {
-   delete solrHomeDir
+   delete base_dir_required
 }
 
 task wrapper(type: Wrapper) {
