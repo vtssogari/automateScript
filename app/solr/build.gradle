@@ -9,7 +9,7 @@ def base_dir_required = "$buildDir/solr_home"
 def output_required = "$buildDir/solr_output.properties"
 def instance_number = 1
 
-def collection_name = "<your collection name here>"
+def collection_name = "udid_udi"
 def collection_config_dir = "<your solr instance conf>"
 def host_name = "localhost"
 def shard_numbers = 1
@@ -20,8 +20,8 @@ def is_deploy_to_tomcat = true
 // END Configuration variables ---------------------------------------------
 
 // Data from Tomcat build file output --------------------------------------										
-def tomcat_port = "8082"
-def catalina_home = "C:\\Users\\Vtssogari\\Documents\\GitHub\\automateScript\\web\\tomcat\\build\\tomcat\\tomcat7_3\\apache-tomcat-7.0.34"
+def tomcat_port = "8080"
+def catalina_home = "C:\\Users\\Vtssogari\\Documents\\GitHub\\automateScript\\web\\tomcat\\build\\tomcat\\tomcat7_1\\apache-tomcat-7.0.34"
 
 // Data from Zookeeper build file output------------------------------------
 def zk_host = "localhost:2181,localhost:2182,localhost:2183"
