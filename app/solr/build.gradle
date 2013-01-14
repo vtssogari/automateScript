@@ -70,23 +70,18 @@ task copyCloudSolrHome(type: Copy, dependsOn: copySolrContextXml) {
 	into targetDir
 }
 
-String getSolrOpts(String solrHome, String port, String zkHost, boolean isWindows, boolean isSolrCloud) {
-	String result = null
-	def SOLR_OPTS = 'SOLR_OPTS=' + getSysProp(solrHome, port, zkHost, isSolrCloud)
-	if(isWindows){
-		result = System.getProperty("line.separator") + "set " + SOLR_OPTS
-		result += System.getProperty("line.separator") + "set JAVA_OPTS=%JAVA_OPTS% %SOLR_OPTS%"
-	}else{
-		result = System.getProperty("line.separator") + SOLR_OPTS
-		result += System.getProperty("line.separator") + 'JAVA_OPTS="$JAVA_OPTS $SOLR_OPTS"'
-	}
-	return result
-}
-
-String getSysProp(String solrHome, String port, String zkHost, boolean isSolrCloud){
-	def sysProp = '-Dsolr.solr.home="'+solrHome+'"'
+String getSysProp(String solrHome, String port, String zkHost, boolean isWindows, boolean isSolrCloud){
+	def sysProp = ''
+	def cloudProp = ''
 	if(isSolrCloud){
-		sysProp += ' -Dport=' + port + ' -DhostContext=solr -DzkClientTimeout=20000 -DzkHost="' + zkHost +'"'
+		cloudProp = ' -Dport=' + port + ' -DhostContext=solr -DzkClientTimeout=20000 -DzkHost=' + zkHost
+	}
+	if(isWindows){
+		sysProp = System.getProperty("line.separator") + 'set SOLR_OPTS=-Dsolr.solr.home="' +solrHome + '"' + cloudProp
+		sysProp += System.getProperty("line.separator") + 'set JAVA_OPTS=%JAVA_OPTS% %SOLR_OPTS%'
+	}else{
+		sysProp = System.getProperty("line.separator") + 'export SOLR_OPTS="' + '-Dsolr.solr.home=' + solrHome + cloudProp
+		sysProp += System.getProperty("line.separator") + 'export JAVA_OPTS="$JAVA_OPTS $SOLR_OPTS"'
 	}
 	return sysProp
 }
@@ -104,8 +99,8 @@ task install() {
 	if(is_deploy_to_tomcat){
 		def setEvnBatFile = file(tomcatBinDir + "/setenv.bat")
 		def setEvnShFile = file(tomcatBinDir + "/setenv.sh")
-		setEvnBatFile.append(getSolrOpts(solrHomeDir, tomcat_port, zk_host, true, is_solr_cloud))
-		setEvnShFile.append(getSolrOpts(solrHomeDir, tomcat_port, zk_host, false, is_solr_cloud))
+		setEvnBatFile.append(getSysProp(solrHomeDir, tomcat_port, zk_host, true, is_solr_cloud))
+		setEvnShFile.append(getSysProp(solrHomeDir, tomcat_port, zk_host, false, is_solr_cloud))
 	}
 	println "Done"
 }
