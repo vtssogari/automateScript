@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<solr persistent="true" sharedLib="lib">
-  <cores adminPath="/admin/cores" zkClientTimeout="${zkClientTimeout:15000}" hostPort="${port:}" hostContext="${hostContext:}">
-    <core schema="schema.xml" loadOnStartup="true" shard="shard1" instanceDir="udid_udi_shard1_replica1\" transient="false" name="udid_udi_shard1_replica1" config="solrconfig.xml" collection="udid_udi"/>
-  </cores>
-</solr>
