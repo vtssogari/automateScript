@@ -57,6 +57,7 @@ task copyZookeeper(type: Copy, dependsOn: configureZKHosts) {
 	def outputDir = file(zookeeperInstanceDir)
 	from zkDir
 	into outputDir
+	fileMode 0755
 }
 
 task configureZookeeper(type: Copy, dependsOn: copyZookeeper) {

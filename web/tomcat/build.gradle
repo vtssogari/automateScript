@@ -29,7 +29,7 @@ task unzipTomcat(type: Copy) {
 	def outputDir = file(tomcatInstanceDir)
 	from zipTree(zipFile)
 	into outputDir
-	fileMode 755
+	fileMode 0755
 }
 
 task copyTomcatSetting(type: Copy, dependsOn: unzipTomcat){
