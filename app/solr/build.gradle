@@ -72,7 +72,7 @@ task copyCloudSolrHome(type: Copy, dependsOn: copySolrContextXml) {
 
 String getSolrOpts(String solrHome, String port, String zkHost, boolean isWindows, boolean isSolrCloud) {
 	String result = null
-	def SOLR_OPTS = 'SOLR_OPTS=' + getSysProp(solrHome, port, zkHost, isWindows, isSolrCloud)
+	def SOLR_OPTS = 'SOLR_OPTS="' + getSysProp(solrHome, port, zkHost, isWindows, isSolrCloud) + '"'
 	if(isWindows){
 		result = System.getProperty("line.separator") + "set " + SOLR_OPTS
 		result += System.getProperty("line.separator") + "set JAVA_OPTS=%JAVA_OPTS% %SOLR_OPTS%"
@@ -91,7 +91,7 @@ String getSysProp(String solrHome, String port, String zkHost, boolean isWindows
 		sysProp = '-Dsolr.solr.home='+solrHome
 	}
 	if(isSolrCloud){
-		sysProp += ' -Dport=' + port + ' -DhostContext=solr -DzkClientTimeout=20000 -DzkHost="' + zkHost +'"'
+		sysProp += ' -Dport=' + port + ' -DhostContext=solr -DzkClientTimeout=20000 -DzkHost=' + zkHost
 	}
 	return sysProp
 }
