@@ -77,7 +77,7 @@ String getSolrOpts(String solrHome, String port, String zkHost, boolean isWindow
 		result = System.getProperty("line.separator") + "set " + SOLR_OPTS
 		result += System.getProperty("line.separator") + "set JAVA_OPTS=%JAVA_OPTS% %SOLR_OPTS%"
 	}else{
-		result = System.getProperty("line.separator") + 'export SOLR_OPTS=' + SOLR_OPTS
+		result = System.getProperty("line.separator") + 'export ' + SOLR_OPTS
 		result += System.getProperty("line.separator") + 'export JAVA_OPTS="$JAVA_OPTS $SOLR_OPTS"'
 	}
 	return result
