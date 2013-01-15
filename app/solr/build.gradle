@@ -115,6 +115,10 @@ task install() {
 	println "Done"
 }
 
+boolean isWindowsEnv() {
+	def os = System.getProperty("os.name").toLowerCase() 
+	return os.contains("windows");
+}
 
 task generateRestAPIUrl(){
 	String content = ''
@@ -130,7 +134,7 @@ task generateRestAPIUrl(){
 	def deleteCollectionUrl = baseUrl + '/solr/admin/collections?action=DELETE&name=' + collection_name
 	//3. create core
 	def createCoreUrl = baseUrl + '/solr/admin/cores?action=CREATE&name=' + collection_name + '&collection=' + collection_name
-	def solrJVMEnvProp = getSysProp(solrHomeDir, tomcat_port, zk_host, is_solr_cloud)
+	def solrJVMEnvProp = getSysProp(solrHomeDir, tomcat_port, zk_host, isWindowsEnv(), is_solr_cloud)
 	
 	
 	def ofile = file(output_required)
@@ -171,11 +175,6 @@ task uploadSolrConfigToZk(type:Exec) {
 	ext.output = {
 		return standardOutput.toString()
 	}
-}
-
-boolean isWindowsEnv() {
-	def os = System.getProperty("os.name").toLowerCase() 
-	return os.contains("windows");
 }
 
 task clean(type: Delete) {
