@@ -29,7 +29,7 @@ def zk_host = "localhost:2181,localhost:2182,localhost:2183"
 // Build script configuration ----------------------------------------------
 //def install_solr_dir = "install/apache-solr-4.1"
 def install_zkCli_dir = "install/SolrZKCli/lib"
-def install_solr4war = "install/apache-solr-4.1-2013-01-07_23-32-20.war"
+def install_solr4war = "install/solr-4.1.0.war"
 
 def solrHomeDir = base_dir_required + "/solr_home_" + instance_number
 def tomcatWebappsDir = catalina_home + '/webapps'
@@ -72,7 +72,7 @@ task copyCloudSolrHome(type: Copy, dependsOn: copySolrContextXml) {
 
 String getSolrOpts(String solrHome, String port, String zkHost, boolean isWindows, boolean isSolrCloud) {
 	String result = null
-	def SOLR_OPTS = 'SOLR_OPTS="' + getSysProp(solrHome, port, zkHost, isWindows, isSolrCloud) + '"'
+	def SOLR_OPTS = 'SOLR_OPTS=' + getSysProp(solrHome, port, zkHost, isWindows, isSolrCloud) 
 	if(isWindows){
 		result = System.getProperty("line.separator") + "set " + SOLR_OPTS
 		result += System.getProperty("line.separator") + "set JAVA_OPTS=%JAVA_OPTS% %SOLR_OPTS%"
@@ -86,12 +86,12 @@ String getSolrOpts(String solrHome, String port, String zkHost, boolean isWindow
 String getSysProp(String solrHome, String port, String zkHost, boolean isWindows, boolean isSolrCloud){
 	def sysProp = ''
 	if(isWindows){
-		sysProp = '-Dsolr.solr.home="'+solrHome+'"'
+		sysProp = '-Dsolr.solr.home='+solrHome
 	}else{
 		sysProp = '-Dsolr.solr.home='+solrHome
 	}
 	if(isSolrCloud){
-		sysProp += ' -Dport=' + port + ' -DhostContext=solr -DzkClientTimeout=20000 -DzkHost=' + zkHost
+		sysProp += ' -Dport=' + port + ' -DhostContext=solr -DzkClientTimeout=1800000 -DzkHost=' + zkHost
 	}
 	return sysProp
 }
