@@ -29,6 +29,8 @@ def zoo_sample_cfg = "template/zoo.cfg"
 def zkClientHosts = ""
 
 task configureZKHosts(){
+	def baseDirReq = file(base_dir_required)
+	baseDirReq.mkdirs()
 	zkServerArray = zk_server_comma_list.tokenize(",")
 	println "clientPort : " + clientPort
 	def count = 0
