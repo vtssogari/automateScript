@@ -81,7 +81,7 @@ fi
 echo "Using config: $ZOOCFG" >&2
 
 if [ -z $ZOOPIDFILE ]; then
-    ZOO_DATADIR=$(grep "^[[:space:]]*dataDir" "$ZOOCFG" | sed -e 's/.*=//')
+    ZOO_DATADIR=$(grep "^dataDir" "$ZOOCFG" | sed -e 's/.*=//')
     if [ ! -d "$ZOO_DATADIR" ]; then
         mkdir -p "$ZOO_DATADIR"
     fi
